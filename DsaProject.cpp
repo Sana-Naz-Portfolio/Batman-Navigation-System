@@ -2,7 +2,8 @@
 #include <string>
 #include <vector>
 #include <queue>
-#include <map>
+#include <stack>
+#include <unordered_map>
 #include <climits>
 #include <algorithm>
 #include <iomanip>
@@ -10,12 +11,11 @@
 using namespace std;
 
 // ================= COLORS & UTILS =================
-// ANSI Escape codes for that "Bat-Computer" feel
-const string GREEN = "\033[32m";
-const string RED = "\033[31m";
+const string GREEN  = "\033[32m";
+const string RED    = "\033[31m";
 const string YELLOW = "\033[33m";
-const string CYAN = "\033[36m";
-const string RESET = "\033[0m";
+const string CYAN   = "\033[36m";
+const string RESET  = "\033[0m";
 
 void printSeparator() {
     cout << CYAN << "============================================================" << RESET << endl;
@@ -35,7 +35,7 @@ struct VillainNode {
     string timestamp;
     VillainNode* next;
 
-    VillainNode(string n, string l, string c, string t) 
+    VillainNode(string n, string l, string c, string t)
         : name(n), location(l), crimeDescription(c), timestamp(t), next(nullptr) {}
 };
 
@@ -63,7 +63,6 @@ public:
             cout << RED << "[COMPUTER]: No active villain records found." << RESET << endl;
             return;
         }
-
         if (head->name == name) {
             VillainNode* toDelete = head;
             head = head->next;
@@ -71,11 +70,9 @@ public:
             cout << GREEN << "[ALFRED]: Very good, sir. " << name << " has been apprehended. Record archived." << RESET << endl;
             return;
         }
-
         VillainNode* temp = head;
-        while (temp->next && temp->next->name != name) {
+        while (temp->next && temp->next->name != name)
             temp = temp->next;
-        }
 
         if (temp->next) {
             VillainNode* toDelete = temp->next;
@@ -96,10 +93,10 @@ public:
         VillainNode* temp = head;
         while (temp) {
             cout << RED << "TARGET: " << temp->name << RESET << endl;
-            cout << "Last Seen: " << temp->location << endl;
+            cout << "Last Seen: " << temp->location        << endl;
             cout << "Activity:  " << temp->crimeDescription << endl;
-            cout << "Time:      " << temp->timestamp << endl;
-            cout << "-----------------------------------" << endl;
+            cout << "Time:      " << temp->timestamp        << endl;
+            cout << "-----------------------------------"    << endl;
             temp = temp->next;
         }
     }
@@ -107,7 +104,7 @@ public:
 
 // ================= 2. EMERGENCY REQUESTS (QUEUE) =================
 struct Emergency {
-    int id;
+    int    id;
     string caller;
     string location;
     string details;
@@ -138,14 +135,9 @@ public:
 
     void displayPending() {
         printHeader("PENDING BAT-SIGNAL ALERTS");
-        if (q.empty()) {
-            cout << "Queue empty." << endl;
-            return;
-        }
-        // Since we can't iterate a std::queue easily without popping, we copy it for display
+        if (q.empty()) { cout << "Queue empty." << endl; return; }
         queue<Emergency> temp = q;
         while (!temp.empty()) {
-        
             Emergency e = temp.front();
             cout << "ID: " << e.id << " | Loc: " << e.location << " | Details: " << e.details << endl;
             temp.pop();
@@ -156,40 +148,42 @@ public:
 // ================= 3. GOTHAM NAVIGATION (WEIGHTED GRAPH) =================
 class GothamNavigation {
 private:
-    // Adjacency list: District Name -> vector of {Neighbor, Weight/Danger}
-    map<string, vector<pair<string, int>>> adj;
+    unordered_map<string, vector<pair<string, int>>> adj;
 
 public:
     void addRoad(string u, string v, int weight) {
         adj[u].push_back({v, weight});
-        adj[v].push_back({u, weight}); // Undirected
+        adj[v].push_back({u, weight});
     }
 
     void findOptimalPath(string start, string end) {
         printHeader("CALCULATING OPTIMAL ROUTE");
-        
-        map<string, int> dist;
-        map<string, string> parent;
-        for (auto const& [district, _] : adj) dist[district] = INT_MAX;
 
-        priority_queue<pair<int, string>, vector<pair<int, string>>, greater<pair<int, string>>> pq;
+        unordered_map<string, int> dist;
+        unordered_map<string, string> parent;        
+        for (auto const& entry : adj)
+            dist[entry.first] = INT_MAX;
+
+        priority_queue<pair<int,string>,
+                       vector<pair<int,string>>,
+                       greater<pair<int,string>>> pq;
 
         dist[start] = 0;
         pq.push({0, start});
 
         while (!pq.empty()) {
             string u = pq.top().second;
-            int d = pq.top().first;
+            int    d = pq.top().first;
             pq.pop();
 
             if (d > dist[u]) continue;
-            if (u == end) break;
+            if (u == end)    break;
 
             for (auto& edge : adj[u]) {
-                string v = edge.first;
-                int weight = edge.second;
+                string v      = edge.first;
+                int    weight = edge.second;
                 if (dist[u] + weight < dist[v]) {
-                    dist[v] = dist[u] + weight;
+                    dist[v]   = dist[u] + weight;
                     parent[v] = u;
                     pq.push({dist[v], v});
                 }
@@ -211,20 +205,18 @@ public:
 
         cout << GREEN << "[BAT-COMPUTER]: Route calculated." << RESET << endl;
         cout << "Path: ";
-        for (size_t i = 0; i < path.size(); i++) {
+        for (size_t i = 0; i < path.size(); i++)
             cout << path[i] << (i < path.size() - 1 ? " -> " : "");
-        }
         cout << "\nTotal Distance/Risk Factor: " << dist[end] << endl;
     }
 
-    // To pre-load dummy data easier
     void initMap() {
-        addRoad("Wayne Tower", "GCPD", 5);
-        addRoad("Wayne Tower", "Crime Alley", 8);
-        addRoad("GCPD", "Arkham Asylum", 12);
-        addRoad("Crime Alley", "The Narrows", 6);
-        addRoad("The Narrows", "Arkham Asylum", 4);
-        addRoad("GCPD", "Iceberg Lounge", 7);
+        addRoad("Wayne Tower",   "GCPD",          5);
+        addRoad("Wayne Tower",   "Crime Alley",   8);
+        addRoad("GCPD",          "Arkham Asylum", 12);
+        addRoad("Crime Alley",   "The Narrows",   6);
+        addRoad("The Narrows",   "Arkham Asylum", 4);
+        addRoad("GCPD",          "Iceberg Lounge",7);
     }
 };
 
@@ -233,7 +225,6 @@ struct CrimeNode {
     int dangerIndex;
     string location;
     CrimeNode *left, *right;
-
     CrimeNode(int d, string l) : dangerIndex(d), location(l), left(nullptr), right(nullptr) {}
 };
 
@@ -244,7 +235,7 @@ private:
     CrimeNode* insert(CrimeNode* node, int danger, string loc) {
         if (!node) return new CrimeNode(danger, loc);
         if (danger < node->dangerIndex)
-            node->left = insert(node->left, danger, loc);
+            node->left  = insert(node->left,  danger, loc);
         else
             node->right = insert(node->right, danger, loc);
         return node;
@@ -271,8 +262,92 @@ public:
     }
 };
 
-// ================= MAIN SYSTEM =================
+// ================= 5. BATARANG INVENTORY (STACK) =================
+class BatarangInventory {
+private:
+    stack<string> inv;
 
+public:
+    void addGadget(string gadget) {
+        inv.push(gadget);
+        cout << GREEN << "[ALFRED]: '" << gadget << "' loaded into utility belt." << RESET << endl;
+    }
+
+    void useGadget() {
+        if (inv.empty()) {
+            cout << RED << "[ALFRED]: Utility belt is empty, Master Wayne!" << RESET << endl;
+            return;
+        }
+        cout << CYAN << "[BATMAN]: Deploying " << inv.top() << " !" << RESET << endl;
+        inv.pop();
+        cout << GREEN << "[ALFRED]: Item removed from belt." << RESET << endl;
+    }
+
+    void viewBelt() {
+        printHeader("UTILITY BELT  (TOP = MOST RECENT)");
+        if (inv.empty()) { cout << "Belt is empty." << endl; return; }
+        stack<string> temp = inv;
+        int slot = 1;
+        while (!temp.empty()) {
+            cout << "  [" << slot++ << "] " << temp.top() << endl;
+            temp.pop();
+        }
+    }
+};
+
+// ================= 6. THREAT PRIORITIZER (MAX-HEAP) =================
+struct Threat {
+    int    threatLevel;
+    string villainName;
+
+    // Makes std::make_heap / push_heap behave as a MAX-heap
+    bool operator<(const Threat& o) const {
+        return threatLevel < o.threatLevel;
+    }
+};
+
+class ThreatPrioritizer {
+private:
+    vector<Threat> heap;   // underlying storage; heap property maintained manually
+
+public:
+    void addThreat(string villain, int level) {
+        heap.push_back({level, villain});
+        push_heap(heap.begin(), heap.end());   // re-heapify after insert
+        cout << YELLOW << "[COMPUTER]: Threat logged — " << villain
+             << "  |  Level: " << level << RESET << endl;
+    }
+
+    void neutralizeTopThreat() {
+        if (heap.empty()) {
+            cout << GREEN << "[ALFRED]: No active threats in the matrix, sir." << RESET << endl;
+            return;
+        }
+        // pop_heap moves the max element to the back; we then remove it
+        pop_heap(heap.begin(), heap.end());
+        Threat t = heap.back();
+        heap.pop_back();
+        cout << CYAN << "[BATMAN]: Neutralizing highest threat: " << t.villainName
+             << "  (Level " << t.threatLevel << ")" << RESET << endl;
+    }
+
+    void displayThreats() {
+        printHeader("ACTIVE THREAT LEVELS (MAX-HEAP)");
+        if (heap.empty()) { cout << "No threats detected." << endl; return; }
+
+        // Copy and sort descending for clean display (does NOT disturb the real heap)
+        vector<Threat> temp = heap;
+        sort(temp.begin(), temp.end(), [](const Threat& a, const Threat& b){
+            return a.threatLevel > b.threatLevel;
+        });
+        for (auto& t : temp) {
+            cout << RED << "  >> " << t.villainName
+                 << "  |  Threat Level: " << t.threatLevel << RESET << endl;
+        }
+    }
+};
+
+// ================= BAT-LOGO =================
 void printBatLogo() {
     cout << YELLOW << R"(
        _==/          i     i          \==_
@@ -286,43 +361,62 @@ void printBatLogo() {
      \XX\       \X/    \XXX/    \X/       /XX/
         "\       "      \X/      "      /"
     )" << RESET << endl;
-    cout << setw(50) << "WAYNE ENTERPRISES TECH DIV." << endl;
-    cout << setw(48) << "BCPVTS v2.4 ONLINE" << endl;
+    cout << setw(50) << "WAYNE ENTERPRISES TECH DIV."  << endl;
+    cout << setw(48) << "BCPVTS v2.4 ONLINE"            << endl;
 }
 
+// ================= MAIN =================
 int main() {
-    // Instantiate Modules
-    VillainTracker tracker;
-    BatSignalQueue emergencyQueue;
-    GothamNavigation gps;
-    CrimeAnalysis analytics;
+    VillainTracker    tracker;
+    BatSignalQueue    emergencyQueue;
+    GothamNavigation  gps;
+    CrimeAnalysis     analytics;
+    BatarangInventory belt;          // NEW — Stack
+    ThreatPrioritizer threatHeap;    // NEW — Heap
 
-    // PRE-LOAD DUMMY DATA
+    // --- PRE-LOAD DUMMY DATA ---
     gps.initMap();
-    tracker.addSighting("The Joker", "Ace Chemicals", "Hijacked chemical shipment", "23:45");
-    tracker.addSighting("Bane", "Gotham Stadium", "Planted explosives", "00:15");
-    emergencyQueue.enqueueRequest("Comm. Gordon", "GCPD Rooftop", "Bat-Signal lit. Immediate assistance required.");
-    emergencyQueue.enqueueRequest("Oracle", "Clock Tower", "Hacking attempt detected on WayneNet.");
+
+    tracker.addSighting("The Joker", "Ace Chemicals",  "Hijacked chemical shipment", "23:45");
+    tracker.addSighting("Bane",      "Gotham Stadium", "Planted explosives",          "00:15");
+
+    emergencyQueue.enqueueRequest("Comm. Gordon", "GCPD Rooftop",  "Bat-Signal lit. Immediate assistance required.");
+    emergencyQueue.enqueueRequest("Oracle",       "Clock Tower",   "Hacking attempt detected on WayneNet.");
+
     analytics.reportCrime(85, "The Narrows - Gang War");
     analytics.reportCrime(95, "Arkham Asylum - Breakout in progress");
     analytics.reportCrime(40, "Robinson Park - Mugging");
 
+    // Stack pre-load
+    belt.addGadget("Batarang");
+    belt.addGadget("Grappling Hook");
+    belt.addGadget("Smoke Pellet");
+
+    // Heap pre-load
+    threatHeap.addThreat("Scarecrow", 72);
+    threatHeap.addThreat("Bane",      88);
+    threatHeap.addThreat("The Joker", 95);
+
+    // --- BOOT SCREEN ---
     printBatLogo();
     cout << "\n[SYSTEM]: BIOMETRIC SCAN... COMPLETE." << endl;
-    cout << "[SYSTEM]: WELCOME, MASTER WAYNE." << endl;
+    cout << "[SYSTEM]: WELCOME, MASTER WAYNE."        << endl;
 
     int choice;
     do {
         cout << "\n" << CYAN << "=== MAIN CONTROL TERMINAL ===" << RESET << endl;
-        cout << "1. Villain Tracker (Linked List)" << endl;
-        cout << "2. Bat-Signal Queue (FIFO)" << endl;
-        cout << "3. Gotham Navigation (Dijkstra)" << endl;
-        cout << "4. Crime Analysis (BST)" << endl;
-        cout << "0. Log Out / Shutdown" << endl;
+        cout << "1. Villain Tracker      (Linked List)"  << endl;
+        cout << "2. Bat-Signal Queue     (FIFO Queue)"   << endl;
+        cout << "3. Gotham Navigation    (Dijkstra)"     << endl;
+        cout << "4. Crime Analysis       (BST)"          << endl;
+        cout << "5. Utility Belt         (Stack)"        << endl;
+        cout << "6. Threat Prioritizer   (Max-Heap)"     << endl;
+        cout << "0. Log Out / Shutdown"                  << endl;
         cout << "Select Protocol: ";
-        cin >> choice;
+        cin  >> choice;
 
-        switch(choice) {
+        switch (choice) {
+            // ---------- LINKED LIST ----------
             case 1: {
                 int vChoice;
                 cout << "\n-- VILLAIN TRACKING --\n1. Add Sighting\n2. View Log\n3. Mark Resolved\nChoice: ";
@@ -330,19 +424,20 @@ int main() {
                 if (vChoice == 1) {
                     string n, l, c, t;
                     cout << "Villain Name: "; cin.ignore(); getline(cin, n);
-                    cout << "Location: "; getline(cin, l);
-                    cout << "Crime: "; getline(cin, c);
-                    cout << "Time: "; getline(cin, t);
+                    cout << "Location:     "; getline(cin, l);
+                    cout << "Crime:        "; getline(cin, c);
+                    cout << "Time:         "; getline(cin, t);
                     tracker.addSighting(n, l, c, t);
                 } else if (vChoice == 2) {
                     tracker.displayTimeline();
                 } else if (vChoice == 3) {
                     string n;
-                    cout << "Enter Villain Name to remove: "; cin.ignore(); getline(cin, n);
+                    cout << "Villain Name to remove: "; cin.ignore(); getline(cin, n);
                     tracker.resolveSighting(n);
                 }
                 break;
             }
+            // ---------- QUEUE ----------
             case 2: {
                 int qChoice;
                 cout << "\n-- EMERGENCY QUEUE --\n1. View Pending\n2. Respond to Alert\nChoice: ";
@@ -351,15 +446,17 @@ int main() {
                 if (qChoice == 2) emergencyQueue.respondToNext();
                 break;
             }
+            // ---------- GRAPH ----------
             case 3: {
-                string start, end;
+                string start, dest;
                 cout << "\n-- NAVIGATION SYSTEM --" << endl;
                 cout << "Known locations: Wayne Tower, GCPD, Crime Alley, The Narrows, Arkham Asylum, Iceberg Lounge" << endl;
                 cout << "Start Point: "; cin.ignore(); getline(cin, start);
-                cout << "Destination: "; getline(cin, end);
-                gps.findOptimalPath(start, end);
+                cout << "Destination: "; getline(cin, dest);
+                gps.findOptimalPath(start, dest);
                 break;
             }
+            // ---------- BST ----------
             case 4: {
                 int cChoice;
                 cout << "\n-- CRIME HEATMAP --\n1. Add Crime Data\n2. View Risk Levels\nChoice: ";
@@ -371,6 +468,39 @@ int main() {
                     analytics.reportCrime(d, l);
                 }
                 if (cChoice == 2) analytics.displayHotspots();
+                break;
+            }
+            // ---------- STACK ----------
+            case 5: {
+                int sChoice;
+                cout << "\n-- UTILITY BELT (STACK) --\n1. Add Gadget\n2. Use Top Gadget\n3. View Belt\nChoice: ";
+                cin >> sChoice;
+                if (sChoice == 1) {
+                    string g;
+                    cout << "Gadget name: "; cin.ignore(); getline(cin, g);
+                    belt.addGadget(g);
+                } else if (sChoice == 2) {
+                    belt.useGadget();
+                } else if (sChoice == 3) {
+                    belt.viewBelt();
+                }
+                break;
+            }
+            // ---------- HEAP ----------
+            case 6: {
+                int hChoice;
+                cout << "\n-- THREAT PRIORITIZER (MAX-HEAP) --\n1. Add Threat\n2. Neutralize Top Threat\n3. View All Threats\nChoice: ";
+                cin >> hChoice;
+                if (hChoice == 1) {
+                    string v; int lvl;
+                    cout << "Villain Name: "; cin.ignore(); getline(cin, v);
+                    cout << "Threat Level (1-100): "; cin >> lvl;
+                    threatHeap.addThreat(v, lvl);
+                } else if (hChoice == 2) {
+                    threatHeap.neutralizeTopThreat();
+                } else if (hChoice == 3) {
+                    threatHeap.displayThreats();
+                }
                 break;
             }
             case 0:
